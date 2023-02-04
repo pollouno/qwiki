@@ -1,8 +1,10 @@
+import { reactive } from "vue";
+import events from "./events";
 import type { Article } from "./interfaces"
 
 let articles : { [id : string] : Article } = {};
 
-const storage = {
+const storage = reactive({
     load() {
         const s = window.localStorage.getItem("articles") ?? "{}";
         articles = JSON.parse(s) as { [id : string] : Article };
@@ -36,6 +38,7 @@ const storage = {
         articles[article.id] = article;
         this.save();
 
+        events.emit('updatedArticle', { id : id, article : article });
         return article;
     },
     setArticleMetadata(id : string, title : string, newId : string)
@@ -52,6 +55,6 @@ const storage = {
 
         return true;
     }
-}
+});
 
 export default storage;

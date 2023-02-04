@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@vueup/vue-quill": "^1.0.1",
+    "mitt": "^3.0.0",
     "naive-ui": "^2.34.3",
     "pinia": "^2.0.28",
     "vue": "^3.2.45",

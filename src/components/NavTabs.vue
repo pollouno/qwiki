@@ -20,6 +20,7 @@ import ArticleComponent from './ArticleComponent.vue'
 import store from '../ts/store'
 import storage from '@/ts/storage'
 import type { Article } from '@/ts/interfaces'
+import events from '@/ts/events'
 
 interface TabInfo {
     articleId: string,
@@ -59,7 +60,22 @@ export default defineComponent({
     beforeMount() {
         this.onSelectTab(store.currentArticle);
     },
+    mounted() {
+        events.on('updatedArticle', (e) => {
+            const data = e as {id : string, article : Article }
+            console.log(data);
+            this.updateTab(data.id, { articleId : data.article.id, title : data.article.title });
+        });
+    },
     methods: {
+        updateTab(id : string, tab : { articleId : string, title : string}) {
+            const i = this.openTabs.findIndex(t => t.articleId == id)
+
+            if(i != -1) {
+                this.openTabs[i].articleId = tab.articleId;
+                this.openTabs[i].title = tab.title;
+            }
+        },
         getArticleData(id : string) : Article {
             let data = storage.getArticle(id);
 
@@ -106,6 +122,8 @@ export default defineComponent({
                 this.currentIndex = index;
                 store.currentArticle = this.openTabs[index].articleId;
             }
+
+            store.selectedText = "";
         },
         onSelectTab(id: string) {
             this.setCurrentTab(this.openTabs.findIndex((e) => e.articleId === id))

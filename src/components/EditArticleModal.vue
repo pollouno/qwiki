@@ -28,16 +28,6 @@ export default defineComponent({
         isNewArticle : {
             type : Boolean,
             required : true
-        },
-        defaultTitle : {
-            type : String,
-            required : false,
-            default : ""
-        },
-        defaultId : {
-            type : String,
-            required : false,
-            default : ""
         }
     },
     emits : [ 'save', 'cancel' ],
@@ -49,19 +39,17 @@ export default defineComponent({
             isCustomId: ref(false)
         }
     },
-    beforeMount() {
-        if(this.defaultId != "") {
-            this.isCustomId = true;
-            this.articleId  = this.defaultId;
-        }
-        if(this.defaultTitle != "") {
-            this.title = this.defaultTitle;
-            this.onTitleChange(this.title);
-        }
-    },
     watch : {
         title(newValue) {
             this.onTitleChange(newValue);
+        },
+        showModal(newValue) {
+            if(newValue && this.isNewArticle && store.selectedText)
+                this.title = store.selectedText;
+            else if(newValue && !store.selectedText)
+                this.title = "New Article";
+            
+            this.onTitleChange(this.title);
         }
     },
     methods : {
@@ -105,18 +93,6 @@ export default defineComponent({
                     }
 
                 });
-            }
-            else {
-                const success = storage.setArticleMetadata(this.defaultId, this.title, this.articleId);
-
-                return new Promise<string | void>(
-                    (resolve, reject) => {
-                        if(success) {
-                            this.$emit('save');
-                            resolve();
-                        } else reject(`No Article with ID ${this.defaultId}`);
-                    }
-                );
             }
         }
     }

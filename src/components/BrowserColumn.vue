@@ -18,6 +18,7 @@ import type { OnUpdateSelectedKeys } from 'naive-ui/es/tree/src/Tree'
 import EditArticleModal from './EditArticleModal.vue'
 import store from '@/ts/store'
 import storage from '@/ts/storage'
+import events from '@/ts/events'
 
 function createData(): TreeOption[] | undefined {
     const data = [] as TreeOption[];
@@ -65,6 +66,9 @@ export default defineComponent({
             data: createData(),
             pattern: ref('')
         }
+    },
+    mounted() {
+        events.on('updatedArticle', () => this.onCreateArticleSave() );
     }
 })
 </script>
