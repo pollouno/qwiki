@@ -7,12 +7,10 @@ const storage = {
         const s = window.localStorage.getItem("articles") ?? "{}";
         articles = JSON.parse(s) as { [id : string] : Article };
         console.log("content loaded!");
-        console.log(articles);
     },
     save() {
         window.localStorage.setItem("articles", JSON.stringify(articles));
         console.log("content saved!");
-        console.log(articles);
     },
     getArticle(id : string) {
         if(id in articles)

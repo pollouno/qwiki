@@ -29,8 +29,6 @@ function createData(): TreeOption[] | undefined {
         data.push({ key : article.id, label: article.title, children: getChildren(article.id)})
     }
 
-    console.log(data);
-
     return data;
 }
 

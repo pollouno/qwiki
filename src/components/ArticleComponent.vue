@@ -1,56 +1,68 @@
 <template>
+    <h1>{{ cleanArticle.title }}</h1>
+    
     <n-button @click="() => { isEditing = !isEditing }">Toggle Edit</n-button>
     <n-button v-if="isDirty && isEditing" @click="onDiscard">Discard</n-button>
     <n-button v-if="isDirty && isEditing" @click="onSave">Save</n-button>
-    <h1>{{ innerArticle.title }}</h1>
-    <QuillEditor @text-change="onTextChange" :content="content" theme="snow" />
+    <quill-editor
+        v-model:content="content"
+        content-type="html"
+        theme="snow"
+        @text-change="onTextChange"
+        @selection-change="onSelectionChange"
+        v-if="isEditing"/>
+    <div v-if="!isEditing" v-html="content"></div>
 </template>
 
 <script lang="ts">
-import type { Article } from '@/ts/interfaces';
 import { NButton } from 'naive-ui';
+import { QuillEditor } from '@vueup/vue-quill';
+import '@vueup/vue-quill/dist/vue-quill.snow.css';
+import type { Article } from '@/ts/interfaces';
 import { ref, type PropType } from 'vue';
 import storage from '@/ts/storage';
 
 export default {
     components: {
-        NButton
+        NButton, QuillEditor
     },
     props: {
-        article: { type: Object as PropType<Article>, required: true }
+        article : {
+            type : Object as PropType<Article>,
+            required : true
+        }
     },
     data() {
         return {
-            innerArticle: this.article,
-            content: ref(""),
-            isDirty: ref(false),
-            isEditing: ref(false)
+            cleanArticle : {} as Article,
+            isDirty : false,
+            isEditing : ref(true),
+            content : ref("")
         }
     },
-    beforeMount() {
-        this.content = this.innerArticle.content;
+    mounted() {
+        this.cleanArticle = this.article;
+        this.onDiscard();
     },
     methods: {
         onTextChange() {
             this.isDirty = true;
         },
+        onSelectionChange(selection : any) {
+            console.log(this.content.substring(selection.range.index, selection.range.length));
+        },
         onDiscard() {
             this.isDirty = false;
-            this.content = this.innerArticle.content;
+            this.content = this.cleanArticle.content;
         },
         onSave() {
             this.isDirty = false;
-            this.innerArticle = storage.setArticle(this.innerArticle.id, {
-                id : this.innerArticle.id,
-                title : this.innerArticle.title,
-                content : this.content,
-                parent : this.innerArticle.parent
+            this.cleanArticle = storage.setArticle(this.cleanArticle.id, {
+                id : this.cleanArticle.id,
+                title : this.cleanArticle.title,
+                parent : this.cleanArticle.parent,
+                content : this.content
             });
-
-            console.log("OnSave -->");
-            console.log(this.innerArticle);
-
-            this.onDiscard();
         }
     }
 }
