@@ -2,31 +2,31 @@
     <n-button @click="showModal = true">
         {{ buttonText }}
     </n-button>
-    <n-modal :show="showModal" preset="dialog" :title="isNewArticle ? 'New Article' : 'Edit article'"
+    <n-modal :show="showModal" preset="dialog" title="New Article"
         positive-text="Submit" negative-text="Cancel" @positive-click="submitCallback" @negative-click="cancelCallback">
-        <n-input placeholder="Enter title here..." v-model:value="title"/>
-        <n-input placeholder="Enter article ID here..." v-model:value="articleId" @change="onArticleIdChange"/>
+        <n-space vertical>
+            <n-input placeholder="Enter title here..." v-model:value="title"/>
+            <n-input placeholder="Enter article ID here..." v-model:value="articleId" @change="onArticleIdChange"/>
+            <n-select :options="collections" v-model:value="collection"/>
+        </n-space>
     </n-modal>
 </template>
 
 <script lang="ts">
 import { defineComponent, ref } from 'vue'
-import { NInput, NModal, NButton } from 'naive-ui'
+import { NInput, NModal, NButton, NSelect, NSpace } from 'naive-ui'
 import storage from '@/ts/storage'
 import store from '@/ts/store'
 import { reject } from 'lodash'
+import type { SelectMixedOption } from 'naive-ui/es/select/src/interface'
 
 export default defineComponent({
     components: {
-        NModal, NInput, NButton
+        NModal, NInput, NButton, NSelect, NSpace
     },
     props : {
         buttonText : {
             type : String,
-            required : true
-        },
-        isNewArticle : {
-            type : Boolean,
             required : true
         }
     },
@@ -35,19 +35,31 @@ export default defineComponent({
         return {
             title: ref("New Article"),
             articleId: ref("new_article"),
+            collection: ref('main'),
+            collections: ref([] as SelectMixedOption[]),
             showModal: ref(false),
             isCustomId: ref(false)
         }
+    },
+    mounted() {
+        storage.getCollections().forEach(c => this.collections.push({
+           label : c,
+           value : c 
+        }));
     },
     watch : {
         title(newValue) {
             this.onTitleChange(newValue);
         },
         showModal(newValue) {
-            if(newValue && this.isNewArticle && store.selectedText)
-                this.title = store.selectedText;
-            else if(newValue && !store.selectedText)
-                this.title = "New Article";
+            if(newValue) {
+                if(store.selectedText)
+                    this.title = store.selectedText;
+                else
+                    this.title = "New Article";
+                
+                this.collection = store.currentCollection;
+            }
             
             this.onTitleChange(this.title);
         }
@@ -77,23 +89,20 @@ export default defineComponent({
         },
         submitCallback() {
             this.showModal = false;
+            
+            const success = storage.getArticle(this.articleId) ? false : true;
+            
+            return new Promise<string | void>((resolve) => {
+                if(success) {
+                    storage.setArticle(this.articleId, { id : this.articleId, title : this.title, content : "", parent : this.collection})
+                    store.setCurrentArticle(this.articleId, this.title);
 
-            if(this.isNewArticle) {
-                const success = storage.getArticle(this.articleId) ? false : true;
-                
-                return new Promise<string | void>((resolve) => {
-                    if(success) {
-                        storage.setArticle(this.articleId, { id : this.articleId, title : this.title, content : "", parent : ""})
-                        store.setCurrentArticle(this.articleId, this.title);
-
-                        this.$emit('save');
-                        resolve();
-                    } else {
-                        reject(`Article with ID ${this.articleId} already exists!`);
-                    }
-
-                });
-            }
+                    this.$emit('save');
+                    resolve();
+                } else {
+                    reject(`Article with ID ${this.articleId} already exists!`);
+                }
+            });
         }
     }
 })

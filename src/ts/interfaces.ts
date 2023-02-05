@@ -2,7 +2,7 @@ interface Article {
     id : string,
     title : string,
     content : string,
-    parent : ""
+    parent : string
 }
 
 export type { Article }

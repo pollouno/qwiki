@@ -2,17 +2,31 @@ import { reactive } from "vue";
 import events from "./events";
 import type { Article } from "./interfaces"
 
+let collections = [] as string[];
 let articles : { [id : string] : Article } = {};
 
 const storage = reactive({
     load() {
-        const s = window.localStorage.getItem("articles") ?? "{}";
-        articles = JSON.parse(s) as { [id : string] : Article };
+        const cc = window.localStorage.getItem("collections") ?? '["main"]';
+        const aa = window.localStorage.getItem("articles") ?? "{}";
+        collections = JSON.parse(cc) as string[];
+        articles    = JSON.parse(aa) as { [id : string] : Article };
         console.log("content loaded!");
+        console.log(collections);
     },
     save() {
         window.localStorage.setItem("articles", JSON.stringify(articles));
+        window.localStorage.setItem("collections", JSON.stringify(collections));
         console.log("content saved!");
+    },
+    getCollections() { return collections; },
+    addCollection(id : string) {
+        if(id in collections)
+            return undefined;
+        
+        collections.push(id);
+        events.emit('createdCollection', { id : id });
+        return id;
     },
     getArticle(id : string) {
         if(id in articles)
@@ -24,7 +38,7 @@ const storage = reactive({
         const arr = [] as Array<Article>;
 
         for (const key in articles) {
-            if(articles[key].parent === id)
+            if(articles[key].parent === id || (id == "main" && articles[key].parent == ""))
                 arr.push(articles[key]);
         }
 

@@ -1,74 +1,109 @@
+<style>
+    .n-divider {
+        margin-top: 24px !important;
+        margin-bottom: 3px !important;
+    }
+</style>
+
 <template>
-    <edit-article-modal button-text="Create new article" is-new-article @save="onCreateArticleSave"/>
-    <n-input v-model:value="pattern" placeholder="Search" />
-    <n-tree
-        block-line 
-        :show-irrelevant-nodes="false"
-        :pattern="pattern"
-        :data="data"
-        @update:selected-keys="(onSelect as OnUpdateSelectedKeys)" draggable />
+    <n-space vertical>
+        <n-space align="center" justify="space-between" style="margin-top: 39px;">
+            <label for="">Collection:</label>
+            <add-collection-modal button-text="+" @save="onCreateCollectionSave"/>
+        </n-space>
+        <n-select :options="collections" v-model:value="currentCollection"/>
+        <n-divider title-placement="left">
+            <add-article-modal button-text="New article" @save="onCreateArticleSave"/>
+        </n-divider>
+        <n-input v-model:value="pattern" placeholder="Search" />
+        <n-tree
+            block-line 
+            :show-irrelevant-nodes="false"
+            :pattern="pattern"
+            :data="data"
+            @update:selected-keys="(onSelect as OnUpdateSelectedKeys)"
+            @drop="onDrop"
+            virtual-scroll
+            draggable />
+    </n-space>
 </template>
 
 <script lang="ts">
 import { defineComponent, ref } from 'vue'
-import type { TreeOption } from 'naive-ui'
-import { NInput, NTree } from 'naive-ui'
+import { NDivider, type TreeDropInfo, type TreeOption } from 'naive-ui'
+import { NInput, NTree, NSelect, NSpace } from 'naive-ui'
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import type { OnUpdateSelectedKeys } from 'naive-ui/es/tree/src/Tree'
-import EditArticleModal from './EditArticleModal.vue'
+import AddArticleModal from './AddArticleModal.vue'
+import AddCollectionModal from './AddCollectionModal.vue'
 import store from '@/ts/store'
 import storage from '@/ts/storage'
 import events from '@/ts/events'
+import type { SelectMixedOption } from 'naive-ui/es/select/src/interface'
 
-function createData(): TreeOption[] | undefined {
+function createData(collection : string): TreeOption[] | undefined {
     const data = [] as TreeOption[];
-    const parentArticles = storage.getChildArticles(""); 
+    const parentArticles = storage.getChildArticles(collection); 
     
     for (let i = 0; i < parentArticles.length; i++) {
         const article = parentArticles[i];
         
-        data.push({ key : article.id, label: article.title, children: getChildren(article.id)})
+        data.push({ key : article.id, label: article.title/*, children: getChildren(article.id)*/})
     }
 
     return data;
 }
 
-function getChildren(id : string) {
-    const articles = storage.getChildArticles(id);
-
-    if(articles.length == 0)
-        return undefined;
-
-    const children = [] as TreeOption[];
-
-    for (let i = 0; i < articles.length; i++) {
-        const article = articles[i];
-        
-        children.push({ name : article.id, label: article.title, children: getChildren(id)})
-    }
-}
-
 export default defineComponent({
     components: {
-        NTree, NInput, EditArticleModal
+        NTree, NInput, NSelect, NDivider, NSpace, AddArticleModal, AddCollectionModal
     },
     methods: {
+        setCollections() {
+            this.collections.splice(0, this.collections.length);
+            storage.getCollections().forEach(c => {
+                this.collections.push({ value : c, label : c });
+            });
+
+            console.log(this.collections);
+        },
         onSelect(keys: Array<string | number>, option: Array<TreeOption | null>, meta: { node: TreeOption, action: 'select' | 'unselect' }) {
             store.setCurrentArticle(meta.node.key as string, meta.node.label as string);
         },
+        onCreateCollectionSave() {
+            this.setCollections();
+            this.onCreateArticleSave();
+        },
         onCreateArticleSave() {
-            this.data = createData();
+            this.data = createData(this.currentCollection);
             this.$forceUpdate();
+        },
+        onDrop({ node, dragNode, dropPosition }: TreeDropInfo) {
+            console.log({ node, dragNode, dropPosition});
         }
     },
     setup() {
         return {
-            data: createData(),
-            pattern: ref('')
+            data: createData('main'),
+            pattern: ref(''),
+            currentCollection: ref('main'),
+            collections: ref([] as SelectMixedOption[])
+        }
+    },
+    watch : {
+        currentCollection() {
+            this.onCreateArticleSave();
+            store.currentCollection = this.currentCollection;
         }
     },
     mounted() {
+        this.setCollections();
         events.on('updatedArticle', () => this.onCreateArticleSave() );
+        events.on('createdCollection', (e)  =>{
+            const data = e as { id : string };
+            this.currentCollection = data.id;
+            this.onCreateCollectionSave();
+        });
     }
 })
 </script>

@@ -9,7 +9,7 @@ import { NLayout, NLayoutSider, NLayoutContent } from "naive-ui";
         <n-layout-sider content-style="padding: 12px;">
             <BrowserColumn/>
         </n-layout-sider>
-        <n-layout-content>
+        <n-layout-content content-style="padding: 12px;">
             <MainColumn/>
         </n-layout-content>
     </n-layout>
