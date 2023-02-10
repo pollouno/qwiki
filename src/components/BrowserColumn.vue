@@ -1,20 +1,20 @@
-<style>
+<!-- <style>
     .n-divider {
         margin-top: 24px !important;
         margin-bottom: 3px !important;
     }
-</style>
+</style> -->
 
 <template>
     <n-space vertical>
-        <n-space align="center" justify="space-between" style="margin-top: 39px;">
-            <label for="">Collection:</label>
-            <add-collection-modal button-text="+" @save="onCreateCollectionSave"/>
+        <h1 style="text-align: center;">Project Name</h1>
+        <!-- <n-button style="margin: 2px; width: auto;"> <Home></Home> </n-button> -->
+        <n-space style="margin-bottom: 12px;" :size="2" justify="space-around">
+            <add-article-modal button-text="New Article" @save="onCreateArticleSave"/>
+            <add-collection-modal button-text="Edit Project" @save="onCreateCollectionSave"/>
         </n-space>
         <n-select :options="collections" v-model:value="currentCollection"/>
-        <n-divider title-placement="left">
-            <add-article-modal button-text="New article" @save="onCreateArticleSave"/>
-        </n-divider>
+        <n-divider style="margin: 10px 0 3px 0;"></n-divider>
         <n-input v-model:value="pattern" placeholder="Search" />
         <n-tree
             block-line 
@@ -35,7 +35,7 @@ import { NInput, NTree, NSelect, NSpace } from 'naive-ui'
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import type { OnUpdateSelectedKeys } from 'naive-ui/es/tree/src/Tree'
 import AddArticleModal from './AddArticleModal.vue'
-import AddCollectionModal from './AddCollectionModal.vue'
+import AddCollectionModal from './EditProjectModal.vue'
 import store from '@/ts/store'
 import storage from '@/ts/storage'
 import events from '@/ts/events'
@@ -98,10 +98,16 @@ export default defineComponent({
     },
     mounted() {
         this.setCollections();
-        events.on('updatedArticle', () => this.onCreateArticleSave() );
+        events.on('updatedArticle'     , () => this.onCreateArticleSave() );
         events.on('createdCollection', (e)  =>{
             const data = e as { id : string };
             this.currentCollection = data.id;
+            this.onCreateCollectionSave();
+        });
+        events.on('collectionRouteUpdated', (e) => {
+            const data = e as { collection : string };
+
+            this.currentCollection = data.collection;
             this.onCreateCollectionSave();
         });
     }

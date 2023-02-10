@@ -3,6 +3,7 @@
         v-model:value="currentTab"
         type="card" 
         tab-style="min-width: 80px;"
+        v-if="openTabs.length"
         @update:value="onSelectTab"
         @close="removeTab" closable>
         <n-tab-pane v-for="tab in openTabs" :key="tab.articleId" :tab="tab.title" :name="tab.articleId">
@@ -11,12 +12,14 @@
             </n-layout>
         </n-tab-pane>
     </n-tabs>
+    <HomeView v-else-if="!openTabs.length || currentIndex == -1" />
 </template>
   
 <script lang="ts">
 import { defineComponent } from 'vue'
-import { NTabs, NTabPane, NLayout } from 'naive-ui'
+import { NTabs, NTabPane, NLayout, NTab } from 'naive-ui'
 import ArticleComponent from './ArticleComponent.vue'
+import HomeView from '@/views/HomeView.vue'
 import store from '../ts/store'
 import storage from '@/ts/storage'
 import type { Article } from '@/ts/interfaces'
@@ -30,7 +33,7 @@ interface TabInfo {
 
 export default defineComponent({
     components: {
-        NTabs, NTabPane, NLayout, ArticleComponent
+        NTabs, NTabPane, NLayout, ArticleComponent, HomeView
     },
     computed : {
         currentTab () {
@@ -62,10 +65,13 @@ export default defineComponent({
     },
     mounted() {
         events.on('updatedArticle', (e) => {
-            const data = e as {id : string, article : Article }
-            console.log(data);
+            const data = e as {id : string, article : Article };
             this.updateTab(data.id, { articleId : data.article.id, title : data.article.title });
         });
+        // events.on('articlePathUpdated', (e) => {
+        //     const data = e as { articleId : string};
+        //     this.currentTab = data.articleId;
+        // });
     },
     methods: {
         updateTab(id : string, tab : { articleId : string, title : string}) {

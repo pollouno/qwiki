@@ -20,6 +20,7 @@ const storage = reactive({
         console.log("content saved!");
     },
     getCollections() { return collections; },
+    collectionExists(id : string | undefined) { return id && collections.findIndex(e => e == id) != -1; },
     addCollection(id : string) {
         if(id in collections)
             return undefined;
@@ -28,6 +29,7 @@ const storage = reactive({
         events.emit('createdCollection', { id : id });
         return id;
     },
+    articleExists(id : string | undefined) { return id && id in articles; },
     getArticle(id : string) {
         if(id in articles)
             return articles[id];

@@ -7,12 +7,13 @@
             <n-space justify="end">
                 <n-button v-if="isDirty" @click="onDiscard">Discard</n-button>
                 <n-button v-if="isDirty" @click="onSave">Save</n-button>
+                <edit-article-menu v-if="isEditing" @move="onMove" @delete="onDelete"/>
             </n-space>
         </n-layout>
     </n-layout>
     <div v-if="isEditing">
         <n-space vertical>
-            <n-input v-model:value="title" size="large" @input="onTextChange"/>
+            <n-input v-model:value="title" :style="titleStyle" size="large" @input="onTextChange"/>
             <n-input v-model:value="id" @input="onTextChange"/>
             <quill-editor
             v-model:content="content"
@@ -25,8 +26,9 @@
         </n-space>
     </div>
     <div v-else>
-        <h1 >{{ title }}</h1>
-        <h3 >({{ id }})</h3>
+        <span>
+            <h1> {{ title }} <small style="font-size: 18px; font-weight: normal;">({{ id }})</small></h1>
+        </span>
         <div v-html="content"></div>
     </div>
 </template>
@@ -35,6 +37,7 @@
 import { NButton, NInput, NLayout, NLayoutSider, NSpace } from 'naive-ui';
 import { Quill, QuillEditor, Delta } from '@vueup/vue-quill';
 import '@vueup/vue-quill/dist/vue-quill.snow.css';
+import EditArticleMenu from './EditArticleMenu.vue';
 import type { Article } from '@/ts/interfaces';
 import { ref, type PropType } from 'vue';
 import storage from '@/ts/storage';
@@ -42,7 +45,7 @@ import store   from '@/ts/store';
 
 export default {
     components: {
-        NButton, NInput, NLayout, NLayoutSider, NSpace, QuillEditor
+        NButton, NInput, NLayout, NLayoutSider, NSpace, QuillEditor, EditArticleMenu
     },
     props: {
         article : {
@@ -58,7 +61,14 @@ export default {
             content : ref(""),
             isDirty : false,
             isEditing : ref(false),
-            editor : Quill
+            editor : Quill,
+            titleStyle : {
+                display: "block",
+                fontSize: "2em",
+                marginTop: "8px",
+                marginBottom: "0",
+                fontWeight: "bold"
+            }
         }
     },
     mounted() {
@@ -106,6 +116,12 @@ export default {
                 parent : this.cleanArticle.parent,
                 content : this.content
             });
+        },
+        onMove(to : string) {
+
+        },
+        onDelete() {
+
         }
     }
 }

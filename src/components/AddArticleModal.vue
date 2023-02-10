@@ -1,6 +1,11 @@
 <template>
     <n-button @click="showModal = true">
-        {{ buttonText }}
+        <n-space size="small">
+            <n-icon>
+                <file-plus></file-plus>
+            </n-icon>
+            {{ buttonText }}
+        </n-space>
     </n-button>
     <n-modal :show="showModal" preset="dialog" title="New Article"
         positive-text="Submit" negative-text="Cancel" @positive-click="submitCallback" @negative-click="cancelCallback">
@@ -14,7 +19,8 @@
 
 <script lang="ts">
 import { defineComponent, ref } from 'vue'
-import { NInput, NModal, NButton, NSelect, NSpace } from 'naive-ui'
+import { NInput, NModal, NButton, NSelect, NSpace, NIcon } from 'naive-ui'
+import { FilePlus } from '@vicons/tabler'
 import storage from '@/ts/storage'
 import store from '@/ts/store'
 import { reject } from 'lodash'
@@ -22,7 +28,7 @@ import type { SelectMixedOption } from 'naive-ui/es/select/src/interface'
 
 export default defineComponent({
     components: {
-        NModal, NInput, NButton, NSelect, NSpace
+        NModal, NInput, NIcon, NButton, NSelect, NSpace, FilePlus
     },
     props : {
         buttonText : {
