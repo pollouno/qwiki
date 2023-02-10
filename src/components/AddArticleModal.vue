@@ -1,42 +1,36 @@
 <template>
-    <n-button @click="showModal = true">
-        <n-space size="small">
-            <n-icon>
-                <file-plus></file-plus>
-            </n-icon>
-            {{ buttonText }}
-        </n-space>
-    </n-button>
+    <n-popselect :options="addOptions" placement="right-start" @update-value="onClick">
+        <n-button>
+            <n-space size="small">
+                <n-icon>
+                    <plus></plus>
+                </n-icon>
+            </n-space>
+        </n-button>
+    </n-popselect>
     <n-modal :show="showModal" preset="dialog" title="New Article"
-        positive-text="Submit" negative-text="Cancel" @positive-click="submitCallback" @negative-click="cancelCallback">
+        positive-text="Create" negative-text="Cancel" @positive-click="submitCallback" @negative-click="cancelCallback">
         <n-space vertical>
             <n-input placeholder="Enter title here..." v-model:value="title"/>
-            <n-input placeholder="Enter article ID here..." v-model:value="articleId" @change="onArticleIdChange"/>
-            <n-select :options="collections" v-model:value="collection"/>
+            <n-input placeholder="Enter ID here..." v-model:value="articleId" @change="onArticleIdChange"/>
+            <n-select v-if="toAdd == 'article'" :options="collections" v-model:value="collection"/>
         </n-space>
     </n-modal>
 </template>
 
 <script lang="ts">
 import { defineComponent, ref } from 'vue'
-import { NInput, NModal, NButton, NSelect, NSpace, NIcon } from 'naive-ui'
-import { FilePlus } from '@vicons/tabler'
-import storage from '@/ts/storage'
+import { NInput, NModal, NButton, NSelect, NSpace, NIcon, NPopselect } from 'naive-ui'
+import { Plus } from '@vicons/tabler'
 import store from '@/ts/store'
 import { reject } from 'lodash'
 import type { SelectMixedOption } from 'naive-ui/es/select/src/interface'
+import events from '@/ts/events'
 
 export default defineComponent({
     components: {
-        NModal, NInput, NIcon, NButton, NSelect, NSpace, FilePlus
+        NModal, NInput, NIcon, NButton, NSelect, NSpace, Plus, NPopselect
     },
-    props : {
-        buttonText : {
-            type : String,
-            required : true
-        }
-    },
-    emits : [ 'save', 'cancel' ],
     setup() {
         return {
             title: ref("New Article"),
@@ -44,14 +38,13 @@ export default defineComponent({
             collection: ref('main'),
             collections: ref([] as SelectMixedOption[]),
             showModal: ref(false),
-            isCustomId: ref(false)
+            isCustomId: ref(false),
+            addOptions: [
+                { label : 'New Article'   , value : 'article' },
+                { label : 'New Collection', value : 'collection' },
+            ],
+            toAdd : ref('')
         }
-    },
-    mounted() {
-        storage.getCollections().forEach(c => this.collections.push({
-           label : c,
-           value : c 
-        }));
     },
     watch : {
         title(newValue) {
@@ -64,7 +57,7 @@ export default defineComponent({
                 else
                     this.title = "New Article";
                 
-                this.collection = store.currentCollection;
+                this.collection = 'root';
             }
             
             this.onTitleChange(this.title);
@@ -89,26 +82,34 @@ export default defineComponent({
                 this.isCustomId = true;
             }
         },
+        onClick(value : string) {
+            this.toAdd = value;
+            this.showModal = true;
+
+            this.collections.length = 0;
+            this.$qwiki.project?.collections.forEach(c => 
+                this.collections.push({
+                    label : c.name == 'root' ? 'Select a collection' : c.name,
+                    value : c.id
+                }
+            ));
+        },
         cancelCallback() {
-            this.$emit('cancel');
             this.showModal = false;
         },
         submitCallback() {
             this.showModal = false;
             
-            const success = storage.getArticle(this.articleId) ? false : true;
-            
-            return new Promise<string | void>((resolve) => {
-                if(success) {
-                    storage.setArticle(this.articleId, { id : this.articleId, title : this.title, content : "", parent : this.collection})
-                    store.setCurrentArticle(this.articleId, this.title);
+            switch (this.toAdd) {
+                case 'article':
+                    this.$qwiki.project?.addArticle(this.articleId, this.title, this.collection);
+                    break;
+                case 'collection':
+                    this.$qwiki.project?.addCollection(this.articleId, this.title);
+                    break;
+            }
 
-                    this.$emit('save');
-                    resolve();
-                } else {
-                    reject(`Article with ID ${this.articleId} already exists!`);
-                }
-            });
+            events.emit('updatedArticles', {});
         }
     }
 })

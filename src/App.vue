@@ -3,7 +3,6 @@ import BrowserColumn from "./components/BrowserColumn.vue";
 import MainColumn from "./components/NavTabs.vue";
 import { NLayout, NLayoutSider, NLayoutContent, NConfigProvider } from "naive-ui";
 import { darkTheme } from "naive-ui";
-import type { RouteRecordNormalized } from "vue-router";
 import events from "./ts/events";
 import storage from "./ts/storage";
 import store from "./ts/store";
@@ -17,6 +16,9 @@ export default {
     },
     computed : {
         path() { return this.$route.path }
+    },
+    mounted() {
+        this.$qwiki.createProject("new_project", "New Project");
     },
     watch : {
         path() {

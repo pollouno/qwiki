@@ -1,25 +1,33 @@
 import type { App } from 'vue';
 import QWikiProject from './qwikiProject';
 
-class QWiki {
-    options : any;
-    project : undefined | QWikiProject;
+declare module 'vue' {
+    interface ComponentCustomProperties {
+        $qwiki: {
+            project : QWikiProject | undefined,
+            createProject : (id : string, name : string) => void,
+            openProject : ( name : string) => void,
+            closeProject : () => void
+        }
+    }
+}
 
-    install(app : App, options? : any ) {
-        app.provide('qwiki', {
-            project : this.project,
-            createProject(name : string) {
-                this.project = new QWikiProject(name);
-            },
-            setProjectName(name : string) {
-                if(!this.project)
-                    return;
-                this.project.name = name
+class QWiki {
+    options: any;
+    project: undefined | QWikiProject;
+
+    install(app: App, options?: any) {
+        app.config.globalProperties.$qwiki = {
+            project: this.project,
+            createProject(id: string, name: string) {
+                this.project = new QWikiProject(id, name);
             },
             openProject(name : string) { },
             closeProject() { }
-        });
+        };
         this.options = options;
+
+        console.log("Qwiki - All set!");
     }
 }
 

@@ -37,6 +37,9 @@ class QWikiCollection {
 
         return a;
     }
+    removeArticle(id : string) {
+        this.articles.splice(this.articles.findIndex(a => a.id == id), 1);
+    }
 }
 
 interface QWikiCollectionEditOptions {
@@ -67,8 +70,8 @@ export default class QWikiProject {
     collectionExists( id : string ) {
         return this.indexOfCollection(id) != -1;
     }
-    getCollection( id : string) {
-        return this.collections.find(c => c.id == id);
+    getCollection( id? : string) {
+        return this.collections.find(c => c.id == (id ?? 'root'));
     }
     addCollection( id : string, name : string ) {
         const c = new QWikiCollection(id, name);
@@ -96,24 +99,41 @@ export default class QWikiProject {
         return this.indexOfArticle(id, collection) == -1;
     }
     getArticle(id : string, collection? : string) {
-        return this.getCollection(collection ?? 'root')?.getArticle(id);
+        return this.getCollection(collection)?.getArticle(id);
     }
     addArticle(id : string, title : string, collection? : string, content? : string) {
-
+        return this.getCollection(collection)?.addArticle(id, title, content);
     }
-    removeArticle(id : string) {
-
+    removeArticle(id : string, collection? : string) {
+        this.getCollection(collection)?.removeArticle(id);
     }
-    editArticle(id : string, newValues : QwikiArticleEditOptions) {
+    editArticle(id : string, newValues : QwikiArticleEditOptions, collection? : string) {
+        const a = this.getCollection(collection)?.getArticle(id);
+        if(!a) return;
 
+        if(newValues.id) a.id = newValues.id;
+        if(newValues.title) a.title = newValues.title;
+        if(newValues.collection)
+            this.moveToCollection(a.id, newValues.collection);
     }
-    setContents(id : string, content : string) {
+    setContents(id : string, content : string, collection? : string) {
+        const a = this.getCollection(collection)?.getArticle(id);
+        if(!a) return;
 
+        a.content = content;
     }
     moveArticle(id : string, index : number) {
 
     }
-    moveToCollection(id : string, collection : string) {
+    moveToCollection(id : string, toCollection : string, fromCollection? : string) {
+        const from = this.getCollection(fromCollection);
+        const to   = this.getCollection(toCollection);
+        if(!from || !to) return;
 
+        const article = from.getArticle(id);
+        if(!article) return;
+
+        from.removeArticle(id);
+        to.addArticle(article.id, article.title, article.content);
     }
 }
