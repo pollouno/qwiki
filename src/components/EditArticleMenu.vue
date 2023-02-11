@@ -24,8 +24,6 @@
     />
 </template>
 <script lang="ts">
-import storage from '@/ts/storage';
-import store from '@/ts/store';
 import { NButton, NPopselect, NModal, NSelect } from 'naive-ui';
 import { ref } from 'vue';
 
@@ -60,7 +58,7 @@ export default {
         onAction(value : string) {
             switch (value) {
                 case 'move':
-                    this.moveTo = store.currentCollection;
+                    this.moveTo = this.$route.params.collection as string ?? 'root';
                     this.showMoveModal = true;
                     break;
                 case 'delete':

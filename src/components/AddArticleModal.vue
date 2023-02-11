@@ -3,16 +3,24 @@
         <n-button>
             <n-space size="small">
                 <n-icon>
-                    <plus></plus>
+                    <plus />
                 </n-icon>
             </n-space>
         </n-button>
     </n-popselect>
-    <n-modal :show="showModal" preset="dialog" title="New Article"
-        positive-text="Create" negative-text="Cancel" @positive-click="submitCallback" @negative-click="cancelCallback">
+    <n-modal 
+        preset="dialog"
+        type="info"
+        positive-text="Create"
+        negative-text="Cancel"
+        :title="modalTitle"
+        :show="showModal"
+        :positive-button-props="{ disabled : !canSave }"
+        @positive-click="submitCallback"
+        @negative-click="cancelCallback">
         <n-space vertical>
-            <n-input placeholder="Enter title here..." v-model:value="title"/>
-            <n-input placeholder="Enter ID here..." v-model:value="articleId" @change="onArticleIdChange"/>
+            <n-input placeholder="Enter title here..." v-model:value="title" @input="onTitleChange"/>
+            <n-input placeholder="Enter ID here..." v-model:value="id" :status="canSave ? 'success' : 'error'" @input="onArticleIdChange" @update:value="checkValidation"/>
             <n-select v-if="toAdd == 'article'" :options="collections" v-model:value="collection"/>
         </n-space>
     </n-modal>
@@ -22,7 +30,6 @@
 import { defineComponent, ref } from 'vue'
 import { NInput, NModal, NButton, NSelect, NSpace, NIcon, NPopselect } from 'naive-ui'
 import { Plus } from '@vicons/tabler'
-import store from '@/ts/store'
 import type { SelectMixedOption } from 'naive-ui/es/select/src/interface'
 import events from '@/ts/events'
 
@@ -32,12 +39,14 @@ export default defineComponent({
     },
     setup() {
         return {
-            title: ref("New Article"),
-            articleId: ref("new_article"),
+            modalTitle : ref(''),
+            title: ref(""),
+            id: ref(""),
             collection: ref('main'),
             collections: ref([] as SelectMixedOption[]),
             showModal: ref(false),
             isCustomId: ref(false),
+            canSave: ref(true),
             addOptions: [
                 { label : 'New Article'   , value : 'article' },
                 { label : 'New Collection', value : 'collection' },
@@ -46,17 +55,24 @@ export default defineComponent({
         }
     },
     watch : {
-        title(newValue) {
-            this.onTitleChange(newValue);
-        },
         showModal(newValue) {
             if(newValue) {
-                if(store.selectedText)
-                    this.title = store.selectedText;
-                else
-                    this.title = "New Article";
+                switch (this.toAdd) {
+                    case 'article':
+                        this.modalTitle = 'New Article';
+                        //TODO: default title to Quill's selected text
+                        this.title = 'New Article';
+
+                        this.id = ''
+                        break;
+                    case 'collection':
+                        this.modalTitle = 'New Collection';
+                        this.title = 'New Collection';
+                        this.id = ''
+                        break;
+                }
                 
-                this.collection = 'root';
+                this.collection = this.$route.params.collection as string ?? 'root';
             }
             
             this.onTitleChange(this.title);
@@ -64,22 +80,24 @@ export default defineComponent({
     },
     methods : {
         onTitleChange(t : string) {
-            this.title = t
-
+            this.title = t;
             if(this.isCustomId)
                 return;
 
-            this.articleId = t.toLowerCase().replace(" ", "_").replace(/[^a-z0-9_]/g, "");
+            this.id = t.toLowerCase().replace(/ /g, "_").replace(/[^a-z0-9_]/g, "");
+            this.checkValidation();
         },
         onArticleIdChange(id : string) {
-            if(id === "") {
+            if(id === '') {
                 this.isCustomId = false;
                 this.onTitleChange(this.title);
             }
             else {
-                this.articleId = id;
+                this.id = id;
                 this.isCustomId = true;
             }
+
+            this.checkValidation();
         },
         onClick(value : string) {
             this.toAdd = value;
@@ -93,6 +111,16 @@ export default defineComponent({
                 }
             ));
         },
+        checkValidation() {
+            if(this.title === '' || this.id === '') {
+                this.canSave = false;
+                return;
+            }
+
+            this.canSave = this.toAdd === 'article' ?
+                !this.$qwiki.project?.articleExists(this.id, this.collection) :
+                !this.$qwiki.project?.collectionExists(this.id)
+        },
         cancelCallback() {
             this.showModal = false;
         },
@@ -101,14 +129,15 @@ export default defineComponent({
             
             switch (this.toAdd) {
                 case 'article':
-                    this.$qwiki.project?.addArticle(this.articleId, this.title, this.collection);
+                    this.$qwiki.project?.addArticle(this.id, this.title, this.collection);
                     break;
                 case 'collection':
-                    this.$qwiki.project?.addCollection(this.articleId, this.title);
+                    this.$qwiki.project?.addCollection(this.id, this.title);
                     break;
             }
 
             events.emit('updatedArticles', {});
+            this.$qwiki.saveSession();
         }
     }
 })

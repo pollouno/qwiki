@@ -6,8 +6,9 @@ declare module 'vue' {
         $qwiki: {
             project : QWikiProject | undefined,
             createProject : (id : string, name : string) => void,
-            openProject : ( name : string) => void,
-            closeProject : () => void
+            sessionExists : () => boolean,
+            loadSession : () => boolean,
+            saveSession : () => void
         }
     }
 }
@@ -22,8 +23,23 @@ class QWiki {
             createProject(id: string, name: string) {
                 this.project = new QWikiProject(id, name);
             },
-            openProject(name : string) { },
-            closeProject() { }
+            sessionExists() {
+                return localStorage.getItem('session') != undefined;
+            },
+            loadSession() {
+                if(!this.sessionExists())
+                    return false;
+
+                const session = JSON.parse(localStorage.getItem('session') ?? '{}');
+                this.project = QWikiProject.Load(session as QWikiProject);
+                console.log(`Session for Project '${this.project.name}' loaded!`, this.project);
+
+                return this.project ? true : false;
+            },
+            saveSession() {
+                const session = JSON.stringify(this.project);
+                localStorage.setItem('session', session);
+            }
         };
         this.options = options;
 

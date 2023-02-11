@@ -61,6 +61,13 @@ export default class QWikiProject {
         this.addCollection('root', 'root');
     }
 
+    static Load(from : QWikiProject) {
+        const p = new QWikiProject(from.id, from.name);
+        p.collections = from.collections;
+
+        return p;
+    }
+
     indexOfCollection(id : string) {
         return this.collections.findIndex(c => c.id == id);
     }
@@ -94,11 +101,11 @@ export default class QWikiProject {
         if(newValues.name) c.name = newValues.name;
     }
     moveCollection( id : string, index : number ) {
-
+        //TODO: add index change
     }
 
     articleExists(id : string, collection? : string) {
-        return this.indexOfArticle(id, collection) == -1;
+        return this.indexOfArticle(id, collection) != -1;
     }
     getArticle(id : string, collection? : string) {
         return this.getCollection(collection)?.getArticle(id);
@@ -125,7 +132,7 @@ export default class QWikiProject {
         a.content = content;
     }
     moveArticle(id : string, index : number) {
-
+        //TODO: add index change 
     }
     moveToCollection(id : string, toCollection : string, fromCollection? : string) {
         const from = this.getCollection(fromCollection);
