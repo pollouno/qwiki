@@ -38,24 +38,16 @@ import { NButton, NInput, NLayout, NLayoutSider, NSpace } from 'naive-ui';
 import { Quill, QuillEditor, Delta } from '@vueup/vue-quill';
 import '@vueup/vue-quill/dist/vue-quill.snow.css';
 import EditArticleMenu from './EditArticleMenu.vue';
-import type { Article } from '@/ts/interfaces';
-import { ref, type PropType } from 'vue';
-import storage from '@/ts/storage';
-import store   from '@/ts/store';
+import { ref } from 'vue';
+import type { QWikiArticle } from '../ts/qwikiProject'
 
 export default {
     components: {
         NButton, NInput, NLayout, NLayoutSider, NSpace, QuillEditor, EditArticleMenu
     },
-    props: {
-        article : {
-            type : Object as PropType<Article>,
-            required : true
-        }
-    },
     data() {
         return {
-            cleanArticle : {} as Article,
+            cleanArticle : {} as QWikiArticle,
             title : ref(""),
             id : ref(""),
             content : ref(""),
@@ -71,9 +63,35 @@ export default {
             }
         }
     },
+    computed : {
+        routeParams() { return this.$route.params; },
+        collection()  { return this.$route.params.collection as string; },
+        articleId()   { return this.$route.params.articleId  as string; }
+    },
+    watch : {
+        routeParams(newValue) {
+            const collection = newValue.collection as string;
+            const articleId  = newValue.articleId  as string;
+
+            const a = this.$qwiki.project?.getArticle(articleId, collection);
+
+            if(a) {
+                this.cleanArticle = a;
+                this.onDiscard();
+            }
+            else this.$router.replace('/');
+        }
+    },
     mounted() {
-        this.cleanArticle = this.article;
-        this.onDiscard();
+        const a = this.$qwiki.project?.getArticle(this.articleId, this.collection);
+
+        console.log(a);
+
+        if(a) {
+            this.cleanArticle = a;
+            this.onDiscard();
+        }
+        else this.$router.replace('/');
     },
     methods: {
         onReady(quill : Quill) { this.editor = quill; },
@@ -85,16 +103,7 @@ export default {
                 }
         },
         onSelectionChange(selection : any) {
-            if(!selection || !selection.range) {
-                store.selectedText = "";
-                return;
-            }
-
-            const delta = this.editor.getContents(selection.range.index, selection.range.length) as Delta;
-            if(delta.length() == 0)
-                store.selectedText = "";
-            else
-                store.selectedText = (delta.ops[0].insert as string).trim();
+            
         },
         onDiscard() {
             this.isDirty = false;
@@ -104,24 +113,20 @@ export default {
         },
         onSave() {
             this.isDirty = false;
-
-            if(store.currentArticle == this.cleanArticle.id) {
-                store.currentArticle = this.id;
-                store.currentTitle = this.title;
-            }
-
-            this.cleanArticle = storage.setArticle(this.cleanArticle.id, {
-                id : this.id,
-                title : this.title,
-                parent : this.cleanArticle.parent,
-                content : this.content
-            });
+            
+            this.$qwiki.project?.editArticle(this.articleId, { id : this.id, title : this.title }, this.collection);
+            this.$qwiki.project?.setContents(this.articleId, this.content, this.collection);
+            this.cleanArticle.id = this.id;
+            this.cleanArticle.title = this.title;
+            this.cleanArticle.content = this.content;
         },
         onMove(to : string) {
-
+            this.$qwiki.project?.moveToCollection(this.articleId, to, this.collection);
+            this.$router.push(`/c/${to}/${this.articleId}`);
         },
         onDelete() {
-
+            this.$qwiki.project?.removeArticle(this.articleId, this.collection);
+            this.$router.replace(`/c/${this.collection}/`)
         }
     }
 }

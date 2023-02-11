@@ -1,6 +1,5 @@
 <script lang="ts">
 import BrowserColumn from "./components/BrowserColumn.vue";
-import MainColumn from "./components/NavTabs.vue";
 import { NLayout, NLayoutSider, NLayoutContent, NConfigProvider } from "naive-ui";
 import { darkTheme } from "naive-ui";
 import events from "./ts/events";
@@ -12,7 +11,7 @@ export default {
         return { darkTheme : darkTheme }
     },
     components : {
-        NConfigProvider, NLayout, NLayoutSider, BrowserColumn, NLayoutContent, MainColumn
+        NConfigProvider, NLayout, NLayoutSider, BrowserColumn, NLayoutContent
     },
     computed : {
         path() { return this.$route.path }
@@ -52,7 +51,8 @@ export default {
                 <BrowserColumn/>
             </n-layout-sider>
             <n-layout-content content-style="padding: 12px;">
-                <MainColumn/>
+                <!-- <MainColumn/> -->
+                <RouterView />
             </n-layout-content>
         </n-layout>
     </n-config-provider>

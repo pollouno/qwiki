@@ -23,7 +23,6 @@ import { defineComponent, ref } from 'vue'
 import { NInput, NModal, NButton, NSelect, NSpace, NIcon, NPopselect } from 'naive-ui'
 import { Plus } from '@vicons/tabler'
 import store from '@/ts/store'
-import { reject } from 'lodash'
 import type { SelectMixedOption } from 'naive-ui/es/select/src/interface'
 import events from '@/ts/events'
 

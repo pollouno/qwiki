@@ -1,4 +1,4 @@
-class QwikiArticle {
+class QWikiArticle {
     id : string;
     title : string;
     collection : string;
@@ -21,7 +21,7 @@ interface QwikiArticleEditOptions {
 class QWikiCollection {
     name : string;
     id : string;
-    articles = [] as QwikiArticle[]
+    articles = [] as QWikiArticle[]
 
     constructor(id : string, name : string) {
         this.id = id;
@@ -32,7 +32,7 @@ class QWikiCollection {
         return this.articles.find(a => a.id == id);
     }
     addArticle(id : string, title : string, content? : string) {
-        const a = new QwikiArticle(id, title, this.id, content);
+        const a = new QWikiArticle(id, title, this.id, content);
         this.articles.push(a);
 
         return a;
@@ -46,6 +46,8 @@ interface QWikiCollectionEditOptions {
     name? : string,
     id? : string
 }
+
+export { QWikiProject, QWikiArticle };
 
 export default class QWikiProject {
     id : string;

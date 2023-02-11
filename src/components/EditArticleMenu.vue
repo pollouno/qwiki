@@ -45,8 +45,8 @@ export default {
         collections() {
             const arr = [] as { label : string, value : string }[];
 
-            storage.getCollections().forEach(c => {
-                arr.push({ label : c, value : c });
+            this.$qwiki.project?.collections.forEach(c => {
+                arr.push({ label : c.name == 'root' ? 'Select a collection' : c.name, value : c.id });
             });
 
             return arr;

@@ -7,10 +7,7 @@
 
 <template>
     <n-space vertical>
-        <h1 style="text-align: center;">{{ projectTitle }}</h1>
-        <n-space style="margin-bottom: 12px;" :size="2" justify="space-around">
-            <add-collection-modal button-text="Edit Project"/>
-        </n-space>
+        <add-collection-modal />
         <n-divider style="margin: 10px 0 3px 0;"></n-divider>
         <browser-tree />
     </n-space>
