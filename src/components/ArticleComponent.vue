@@ -6,7 +6,7 @@
         <n-layout>
             <n-space justify="end">
                 <n-button v-if="isDirty" @click="onDiscard">Discard</n-button>
-                <n-button v-if="isDirty" @click="onSave">Save</n-button>
+                <n-button v-if="isDirty" :disabled="!canSave" @click="onSave">Save</n-button>
                 <edit-article-menu v-if="isEditing" @move="onMove" @delete="onDelete"/>
             </n-space>
         </n-layout>
@@ -14,7 +14,7 @@
     <div v-if="isEditing">
         <n-space vertical>
             <n-input v-model:value="title" :style="titleStyle" size="large" @input="onTextChange"/>
-            <n-input v-model:value="id" @input="onTextChange"/>
+            <n-input v-model:value="id" :status="canSave ? 'success' : 'error'" @input="onTextChange"/>
             <quill-editor
             v-model:content="content"
             content-type="html"
@@ -34,7 +34,7 @@
 </template>
 
 <script lang="ts">
-import { NButton, NInput, NLayout, NLayoutSider, NSpace } from 'naive-ui';
+import { NButton, NInput, NLayout, NLayoutSider, NSpace, useMessage } from 'naive-ui';
 import { Quill, QuillEditor, Delta } from '@vueup/vue-quill';
 import '@vueup/vue-quill/dist/vue-quill.snow.css';
 import EditArticleMenu from './EditArticleMenu.vue';
@@ -53,6 +53,7 @@ export default {
             content : ref(""),
             isDirty : false,
             isEditing : ref(false),
+            canSave : true,
             editor : Quill,
             titleStyle : {
                 display: "block",
@@ -101,9 +102,11 @@ export default {
                 this.content != this.cleanArticle.content ) {
                     this.isDirty = true;
                 }
+
+            this.canSave = !this.$qwiki.project?.articleExists(this.id, this.collection) || this.id == this.cleanArticle.id;
         },
-        onSelectionChange(selection : any) {
-            
+        onSelectionChange(selection : Delta) {
+            //TODO: save selection somewhere
         },
         onDiscard() {
             this.isDirty = false;
@@ -112,6 +115,12 @@ export default {
             this.content = this.cleanArticle.content;
         },
         onSave() {
+            if(this.$qwiki.project?.articleExists(this.id, this.collection)) {
+                const msg = useMessage();
+                msg.error(`Article with ID ${this.id} already exists!`);
+                return;
+            }
+
             this.isDirty = false;
             
             this.$qwiki.project?.editArticle(this.articleId, { id : this.id, title : this.title }, this.collection);
@@ -119,14 +128,20 @@ export default {
             this.cleanArticle.id = this.id;
             this.cleanArticle.title = this.title;
             this.cleanArticle.content = this.content;
+
+            this.$qwiki.saveSession();
         },
         onMove(to : string) {
             this.$qwiki.project?.moveToCollection(this.articleId, to, this.collection);
             this.$router.push(`/c/${to}/${this.articleId}`);
+            
+            this.$qwiki.saveSession();
         },
         onDelete() {
             this.$qwiki.project?.removeArticle(this.articleId, this.collection);
-            this.$router.replace(`/c/${this.collection}/`)
+            this.$router.replace(`/c/${this.collection}/`);
+            
+            this.$qwiki.saveSession();
         }
     }
 }
