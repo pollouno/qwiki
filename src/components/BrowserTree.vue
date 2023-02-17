@@ -39,23 +39,25 @@ import { ref } from 'vue';
                 const data = [] as TreeOption[];
 
                 this.$qwiki.project?.getCollection()?.articles.forEach(a => {
-                    data.push({
-                        label : a.title,
-                        key : 'root:'+ a.id
-                    })
-                });
-                this.$qwiki.project?.collections.forEach(c => {
-                    if(c.id == 'root')
-                        return;
-                    
-                    const children = [] as TreeOption[];
-
-                    c.articles.forEach(a => {
-                        children.push({
+                        data.push({
                             label : a.title,
-                            key : `${c.id}:${a.id}`
-                        });
+                            key : 'root:'+ a.id
+                        })
                     });
+                    this.$qwiki.project?.collections.forEach(c => {
+                        if(c.id == 'root')
+                        return;
+                        
+                        const children = [] as TreeOption[];
+                        
+                        c.articles.forEach(a => {
+                            if(a.id == 'home')
+                                return;
+                            children.push({
+                                label : a.title,
+                                key : `${c.id}:${a.id}`
+                            });
+                        });
 
                     data.push({
                         label : c.name,
@@ -129,10 +131,15 @@ import { ref } from 'vue';
                 if(newValue.length == 0)
                     return;
                 
+                if(newValue == 'root:home') {
+                    this.$router.push('/');
+                    return;
+                }
+
                 const collection = (newValue[0] as string).split(':')[0];
                 const article    = (newValue[0] as string).split(':')[1];
-
-                this.$router.push(`/c/${collection}/${article}`);
+                
+                this.$router.push(`/${collection}/${article}`);
             }
         }
     }

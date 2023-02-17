@@ -38,6 +38,8 @@ class QWikiCollection {
         return a;
     }
     removeArticle(id : string) {
+        if(id == 'home')
+            return;
         this.articles.splice(this.articles.findIndex(a => a.id == id), 1);
     }
 }
@@ -47,7 +49,24 @@ interface QWikiCollectionEditOptions {
     id? : string
 }
 
-export { QWikiProject, QWikiArticle };
+interface QWikiProjectFile {
+    id : string,
+    name : string,
+    collections : QWikiCollectionFile[]
+}
+interface QWikiCollectionFile {
+    id : string,
+    name : string,
+    articles : QWikiArticleFile[]
+}
+interface QWikiArticleFile {
+    id : string,
+    title : string,
+    collection : string,
+    content : string
+}
+
+export { QWikiProject, type QWikiProjectFile, QWikiArticle };
 
 export default class QWikiProject {
     id : string;
@@ -61,18 +80,35 @@ export default class QWikiProject {
         this.addCollection('root', 'root');
     }
 
-    static Load(from : QWikiProject) {
+    static Load(from : QWikiProjectFile) {
         const p = new QWikiProject(from.id, from.name);
-        p.collections = from.collections;
+        from.collections.forEach(c => {
+            const aa = [] as QWikiArticle[];
+            c.articles.forEach(a => {
+                aa.push(new QWikiArticle(a.id, a.title, c.id, a.content));
+            });
+
+            const cc = new QWikiCollection(c.id, c.name);
+            cc.articles = aa;
+            p.collections.push(cc);
+        });
 
         return p;
+    }
+
+    getFile() : QWikiProjectFile {
+        return {
+            id : this.id,
+            name : this.name,
+            collections : this.collections
+        }
     }
 
     indexOfCollection(id : string) {
         return this.collections.findIndex(c => c.id == id);
     }
     indexOfArticle(id : string, collection? : string) {
-        const i = this.indexOfCollection(collection ?? 'root');
+        const i = collection ? this.indexOfCollection(collection) : 0;
         return this.collections[i].articles.findIndex(a => a.id == id);
     }
 
@@ -80,11 +116,14 @@ export default class QWikiProject {
         return this.indexOfCollection(id) != -1;
     }
     getCollection( id? : string) {
-        return this.collections.find(c => c.id == (id ?? 'root'));
+        if(!id)
+            return this.collections[0];
+        return this.collections.find(c => c.id == id);
     }
     addCollection( id : string, name : string ) {
         const c = new QWikiCollection(id, name);
         this.collections.push(c);
+        this.addArticle('home', id == 'root' ? 'Home' : name, '');
 
         return c;
     }
@@ -108,6 +147,7 @@ export default class QWikiProject {
         return this.indexOfArticle(id, collection) != -1;
     }
     getArticle(id : string, collection? : string) {
+        console.log('getArticle', this.getCollection(collection));
         return this.getCollection(collection)?.getArticle(id);
     }
     addArticle(id : string, title : string, collection? : string, content? : string) {

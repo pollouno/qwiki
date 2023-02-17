@@ -14,7 +14,7 @@
     <div v-if="isEditing">
         <n-space vertical>
             <n-input v-model:value="title" :style="titleStyle" size="large" @input="onTextChange"/>
-            <n-input v-model:value="id" :status="canSave ? 'success' : 'error'" @input="onTextChange"/>
+            <n-input v-if="!isCollection" v-model:value="id" :status="canSave ? 'success' : 'error'" @input="onTextChange"/>
             <quill-editor
             v-model:content="content"
             content-type="html"
@@ -27,7 +27,7 @@
     </div>
     <div v-else>
         <span>
-            <h1> {{ title }} <small style="font-size: 18px; font-weight: normal;">({{ id }})</small></h1>
+            <h1> {{ title }} <small v-if="!isCollection" style="font-size: 18px; font-weight: normal;">({{ id }})</small></h1>
         </span>
         <div v-html="content"></div>
     </div>
@@ -40,6 +40,7 @@ import '@vueup/vue-quill/dist/vue-quill.snow.css';
 import EditArticleMenu from './EditArticleMenu.vue';
 import { ref } from 'vue';
 import type { QWikiArticle } from '../ts/qwikiProject'
+import events from '@/ts/events';
 
 export default {
     components: {
@@ -65,14 +66,15 @@ export default {
         }
     },
     computed : {
-        routeParams() { return this.$route.params; },
-        collection()  { return this.$route.params.collection as string; },
-        articleId()   { return this.$route.params.articleId  as string; }
+        routeParams() { console.log(this.$route.params); return this.$route.params; },
+        collection()  { return this.$route.params.collection as string ?? 'root'; },
+        articleId()   { return this.$route.params.articleId  as string ?? 'home'; },
+        isCollection(){ return this.articleId == 'home'; }
     },
     watch : {
         routeParams(newValue) {
-            const collection = newValue.collection as string;
-            const articleId  = newValue.articleId  as string;
+            const collection = newValue.collection;
+            const articleId  = newValue.articleId;
 
             const a = this.$qwiki.project?.getArticle(articleId, collection);
 
@@ -85,8 +87,6 @@ export default {
     },
     mounted() {
         const a = this.$qwiki.project?.getArticle(this.articleId, this.collection);
-
-        console.log(a);
 
         if(a) {
             this.cleanArticle = a;
@@ -115,12 +115,6 @@ export default {
             this.content = this.cleanArticle.content;
         },
         onSave() {
-            if(this.$qwiki.project?.articleExists(this.id, this.collection)) {
-                const msg = useMessage();
-                msg.error(`Article with ID ${this.id} already exists!`);
-                return;
-            }
-
             this.isDirty = false;
             
             this.$qwiki.project?.editArticle(this.articleId, { id : this.id, title : this.title }, this.collection);
@@ -129,17 +123,21 @@ export default {
             this.cleanArticle.title = this.title;
             this.cleanArticle.content = this.content;
 
+            if(this.isCollection)
+                this.$qwiki.project?.editCollection(this.collection, { name : this.title })
+
             this.$qwiki.saveSession();
+            events.emit('updatedArticles', {});
         },
         onMove(to : string) {
             this.$qwiki.project?.moveToCollection(this.articleId, to, this.collection);
-            this.$router.push(`/c/${to}/${this.articleId}`);
+            this.$router.push(`/${to}/${this.articleId}`);
             
             this.$qwiki.saveSession();
         },
         onDelete() {
             this.$qwiki.project?.removeArticle(this.articleId, this.collection);
-            this.$router.replace(`/c/${this.collection}/`);
+            this.$router.replace(`/${this.collection}/`);
             
             this.$qwiki.saveSession();
         }
